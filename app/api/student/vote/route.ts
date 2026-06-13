@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/db";
+import crypto from "crypto";
 
 // GET: Fetch the ballot for the student
 export async function GET() {
@@ -25,7 +26,7 @@ export async function GET() {
       return NextResponse.json({ status: "ALREADY_VOTED" }, { status: 200 });
     }
 
-    // 2. Fetch only the contestants this student is allowed to see based on the new rules
+    // 2. Fetch only the contestants this student is allowed to see based on the visibility rules
     const contestants = await prisma.contestant.findMany({
       where: {
         schoolId: schoolId,
@@ -37,13 +38,19 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json({ status: "CAN_VOTE", contestants }, { status: 200 });
+    // Added student data to response so the frontend can greet them
+    return NextResponse.json({ 
+      status: "CAN_VOTE", 
+      contestants,
+      student: { name: student.name, grade: student.grade, section: student.section } 
+    }, { status: 200 });
+
   } catch (error) {
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
 
-// POST: Submit the final ballot
+// POST: Submit the final ballot and generate Cryptographic Receipts
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -53,7 +60,7 @@ export async function POST(req: Request) {
 
     const studentId = (session.user as any).id;
     const schoolId = (session.user as any).schoolId;
-    const { votes } = await req.json(); // Object like: { "President": "contestant_id_1", "Class Rep": "contestant_id_2" }
+    const { votes } = await req.json(); // Object like: { "President": "contestant_id_1" }
 
     if (!votes || Object.keys(votes).length === 0) {
       return NextResponse.json({ message: "You must select at least one candidate." }, { status: 400 });
@@ -65,13 +72,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "You have already cast your ballot!" }, { status: 400 });
     }
 
-    // Prepare the vote records
-    const voteRecords = Object.entries(votes).map(([position, contestantId]) => ({
-      schoolId: schoolId,
-      studentId: studentId,
-      contestantId: String(contestantId),
-      position: position
-    }));
+    const timestamp = new Date().toISOString();
+    const auditSignatures: string[] = [];
+
+    // Prepare the vote records and generate cryptographic hashes
+    const voteRecords = Object.entries(votes).map(([position, contestantId]) => {
+      // Generate a unique, irreversible SHA-256 hash for this specific vote
+      const hash = crypto
+        .createHash("sha256")
+        .update(`${schoolId}-${studentId}-${contestantId}-${position}-${timestamp}-${Math.random()}`)
+        .digest("hex");
+      
+      auditSignatures.push(hash);
+
+      return {
+        schoolId: schoolId,
+        studentId: studentId,
+        contestantId: String(contestantId),
+        position: position
+      };
+    });
 
     // Perform a Database Transaction (If one fails, they all fail)
     await prisma.$transaction([
@@ -79,7 +99,11 @@ export async function POST(req: Request) {
       prisma.student.update({ where: { id: studentId }, data: { has_voted: true } })
     ]);
 
-    return NextResponse.json({ message: "Your votes have been securely recorded!" }, { status: 201 });
+    return NextResponse.json({ 
+      message: "Your votes have been securely recorded!",
+      receipts: auditSignatures 
+    }, { status: 201 });
+
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "An error occurred while saving your vote." }, { status: 500 });

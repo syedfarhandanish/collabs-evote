@@ -7,17 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Election Lifecycle States
+enum ElectionStatus {
+  UPCOMING
+  LIVE
+  COMPLETED
+}
+
 // 1. School Admin Account
 model School {
-  id            String       @id @default(cuid())
-  name          String
-  email         String       @unique
-  password_hash String
-  positions     String[]     @default([]) // <-- NEW: Array to store custom election positions
-  students      Student[]
-  contestants   Contestant[]
-  votes         Vote[]
-  createdAt     DateTime     @default(now())
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  password_hash   String
+  positions       String[]       @default([]) 
+  election_status ElectionStatus @default(UPCOMING) // <-- NEW: Lifecycle Controller
+  students        Student[]
+  contestants     Contestant[]
+  votes           Vote[]
+  createdAt       DateTime       @default(now())
 }
 
 // 2. Student Data
@@ -42,7 +50,7 @@ model Student {
 enum Visibility {
   ALL_STUDENTS
   SPECIFIC_GRADE
-  SPECIFIC_SECTION // <-- NEW: Only show to matching grade AND section
+  SPECIFIC_SECTION 
 }
 
 // 3. Election Candidates (Contestants)
@@ -52,7 +60,7 @@ model Contestant {
   name       String
   grade      String
   section    String
-  position   String     // e.g., President, Class Representative
+  position   String     
   photo_url  String?
   visibility Visibility @default(ALL_STUDENTS)
   school     School     @relation(fields: [schoolId], references: [id])
