@@ -1,288 +1,101 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { motion } from "framer-motion";
+import Link from "next/link";
 
-export default function HomePage() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"student" | "admin">("student");
-  const [adminMode, setAdminMode] = useState<"login" | "register">("login");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // Form States
-  const [studentForm, setStudentForm] = useState({ schoolId: "", studentId: "", password: "" });
-  const [adminLoginForm, setAdminLoginForm] = useState({ email: "", password: "" });
-  const [adminRegisterForm, setAdminRegisterForm] = useState({ schoolName: "", email: "", password: "" });
-
-  const handleStudentLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    
-    // یہاں آپ اپنی NextAuth کی اسٹوڈنٹ لاگ ان لاجک کنیکٹ کریں گے
-    console.log("Student Login Submit:", studentForm);
-    setLoading(false);
-  };
-
-  const handleAdminLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const res = await signIn("credentials", {
-      redirect: false,
-      email: adminLoginForm.email,
-      password: adminLoginForm.password,
-      role: "school"
-    });
-
-    if (res?.error) {
-      setError("Invalid email or password");
-      setLoading(false);
-    } else {
-      router.push("/school/dashboard");
-    }
-  };
-
-  const handleAdminRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/school/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(adminRegisterForm),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Something went wrong");
-
-      // رجسٹریشن کے بعد خودکار لاگ ان یا لاگ ان موڈ پر منتقل کریں
-      setAdminMode("login");
-      setAdminLoginForm({ email: adminRegisterForm.email, password: adminRegisterForm.password });
-      alert("School registered successfully! Please login.");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-center items-center p-4 selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center relative overflow-hidden font-sans">
       
-      {/* Top Header / Logo Section */}
-      <div className="text-center mb-8 animate-fade-in">
-        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-indigo-400 to-cyan-400 tracking-tight">
-          Collabs | E-Learning Initiative
-        </h1>
-        <p className="text-slate-400 mt-2 text-sm md:text-base">
-          Secure, Transparent & Decentralized Campus Voting System
-        </p>
-      </div>
+      {/* Background Decor */}
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/30 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-120 h-120 bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Main Authentication Card */}
-      <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl overflow-hidden transition-all duration-300">
+      {/* Navigation */}
+      <nav className="absolute top-0 w-full p-6 flex justify-between items-center z-50 max-w-7xl mx-auto">
+        <div className="text-2xl font-black text-indigo-950 tracking-tighter">
+          Collabs <span className="text-blue-600">eVote</span>
+        </div>
+        <div className="flex gap-4 items-center">
+          <Link href="/about" className="text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors hidden sm:block">
+            About Collabs
+          </Link>
+          <Link href="/login" className="text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors bg-white/50 px-6 py-2 rounded-full shadow-sm backdrop-blur-md">
+            School Admin Portal
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-4xl mx-auto mt-10">
         
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-800 bg-slate-950/40">
-          <button
-            onClick={() => { setActiveTab("student"); setError(""); }}
-            className={`flex-1 py-4 text-center font-medium text-sm transition-all duration-200 ${
-              activeTab === "student"
-                ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-900/40"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            🎓 Student Portal
-          </button>
-          <button
-            onClick={() => { setActiveTab("admin"); setError(""); }}
-            className={`flex-1 py-4 text-center font-medium text-sm transition-all duration-200 ${
-              activeTab === "admin"
-                ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-900/40"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            🏢 School Admin
-          </button>
-        </div>
+        {/* Pulsing Live Badge */}
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="mb-8 flex items-center gap-3 bg-red-100 text-red-700 px-5 py-2 rounded-full font-black text-sm uppercase tracking-widest shadow-sm border border-red-200"
+        >
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+          </span>
+          Campus Elections are Live
+        </motion.div>
 
-        <div className="p-6 md:p-8">
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm text-center">
-              {error}
-            </div>
-          )}
+        <motion.h1 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, type: "spring" }}
+          className="text-6xl md:text-8xl font-black text-slate-900 tracking-tight leading-[1.1] mb-6"
+        >
+          Shape Your <br />
+          <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-indigo-600">
+            Future Today.
+          </span>
+        </motion.h1>
 
-          {/* STUDENT LOGIN FORM */}
-          {activeTab === "student" && (
-            <form onSubmit={handleStudentLogin} className="space-y-5">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">School Access Code</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., clg-101"
-                  value={studentForm.schoolId}
-                  onChange={(e) => setStudentForm({ ...studentForm, schoolId: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Student ID / Roll No</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., S-105"
-                  value={studentForm.studentId}
-                  onChange={(e) => setStudentForm({ ...studentForm, studentId: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={studentForm.password}
-                  onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-linear-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-200 transform active:scale-[0.98] disabled:opacity-50"
-              >
-                {loading ? "Verifying..." : "Enter Voting Booth"}
-              </button>
-            </form>
-          )}
+        <motion.p 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-lg md:text-xl text-slate-600 font-medium mb-12 max-w-2xl"
+        >
+          Your voice matters. Enter the secure Collabs ecosystem to cast your ballot for the next generation of campus leaders. The voting window is closing soon.
+        </motion.p>
 
-          {/* ADMIN PORTAL (LOGIN & REGISTER) */}
-          {activeTab === "admin" && (
-            <div>
-              {/* Admin Mode Sub-Toggle */}
-              <div className="flex justify-center space-x-4 mb-6 p-1 bg-slate-950/60 rounded-xl border border-slate-800/60">
-                <button
-                  type="button"
-                  onClick={() => { setAdminMode("login"); setError(""); }}
-                  className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
-                    adminMode === "login"
-                      ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setAdminMode("register"); setError(""); }}
-                  className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
-                    adminMode === "register"
-                      ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  Register School
-                </button>
-              </div>
-
-              {/* Admin Login Form */}
-              {adminMode === "login" && (
-                <form onSubmit={handleAdminLogin} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">School Email</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="admin@school.com"
-                      value={adminLoginForm.email}
-                      onChange={(e) => setAdminLoginForm({ ...adminLoginForm, email: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={adminLoginForm.password}
-                      onChange={(e) => setAdminLoginForm({ ...adminLoginForm, password: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 bg-linear-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/20 transition-all duration-200 transform active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {loading ? "Authenticating..." : "Login to Control Panel"}
-                  </button>
-                </form>
-              )}
-
-              {/* Admin Registration Form */}
-              {adminMode === "register" && (
-                <form onSubmit={handleAdminRegister} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Official School Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g., Aga Khan Higher Secondary School"
-                      value={adminRegisterForm.schoolName}
-                      onChange={(e) => setAdminRegisterForm({ ...adminRegisterForm, schoolName: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">School Email Address</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="info@school.edu.pk"
-                      value={adminRegisterForm.email}
-                      onChange={(e) => setAdminRegisterForm({ ...adminRegisterForm, email: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Create Secure Password</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={adminRegisterForm.password}
-                      onChange={(e) => setAdminRegisterForm({ ...adminRegisterForm, password: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-medium rounded-xl shadow-lg shadow-cyan-500/20 transition-all duration-200 transform active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {loading ? "Registering Platform..." : "Setup School Ecosystem"}
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
-        </div>
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="flex flex-col sm:flex-row gap-4 w-full justify-center"
+        >
+          <Link href="/student-login">
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="w-full sm:w-auto px-10 py-5 bg-linear-to-r from-blue-600 to-indigo-600 text-white font-black text-xl rounded-2xl shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all flex items-center justify-center gap-3"
+            >
+              Enter Voting Booth
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            </motion.button>
+          </Link>
+        </motion.div>
       </div>
 
-      {/* Institutional Footer */}
-      <div className="mt-8 text-center text-xs text-slate-600">
-        &copy; {new Date().getFullYear()} Collabs System. All educational rights reserved.
-      </div>
+      {/* Floating Design Elements */}
+      <motion.div animate={{ y: [-10, 10, -10], rotate: [0, 5, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="hidden lg:flex absolute top-1/4 left-[10%] bg-white p-4 rounded-2xl shadow-xl border border-slate-100 items-center gap-4 z-0">
+        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-xl">✓</div>
+        <div>
+          <div className="h-2 w-20 bg-slate-200 rounded-full mb-2"></div>
+          <div className="h-2 w-12 bg-slate-100 rounded-full"></div>
+        </div>
+      </motion.div>
+
+      <motion.div animate={{ y: [10, -10, 10], rotate: [0, -5, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} className="hidden lg:flex absolute bottom-1/4 right-[10%] bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 flex-col items-center z-0">
+        <div className="w-16 h-16 bg-linear-to-br from-indigo-500 to-purple-600 rounded-full border-4 border-white shadow-md mb-3"></div>
+        <div className="h-3 w-24 bg-slate-200 rounded-full mb-2"></div>
+        <div className="h-2 w-16 bg-indigo-100 rounded-full"></div>
+      </motion.div>
     </div>
   );
 }
