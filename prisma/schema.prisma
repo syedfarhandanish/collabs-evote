@@ -16,16 +16,17 @@ enum ElectionStatus {
 
 // 1. School Admin Account
 model School {
-  id              String         @id @default(cuid())
-  name            String
-  email           String         @unique
-  password_hash   String
-  positions       String[]       @default([]) 
-  election_status ElectionStatus @default(UPCOMING) // <-- NEW: Lifecycle Controller
-  students        Student[]
-  contestants     Contestant[]
-  votes           Vote[]
-  createdAt       DateTime       @default(now())
+  id                String          @id @default(cuid())
+  name              String
+  email             String          @unique
+  password_hash     String
+  positions         String[]        @default([]) 
+  election_status   ElectionStatus @default(UPCOMING) 
+  results_published Boolean         @default(false)
+  students          Student[]
+  contestants       Contestant[]
+  votes             Vote[]
+  createdAt         DateTime        @default(now())
 }
 
 // 2. Student Data

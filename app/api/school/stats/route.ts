@@ -12,10 +12,15 @@ export async function GET() {
 
     const schoolId = (session.user as any).id;
 
-    // FIXED: Count students who have voted, NOT the individual vote rows!
+    // Fetch the real school name from your exact School schema
+    const schoolData = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: { name: true }
+    });
+
     const [studentCount, voteCount, contestantCount] = await Promise.all([
       prisma.student.count({ where: { schoolId } }),
-      prisma.student.count({ where: { schoolId, has_voted: true } }), // This fixes the 3 vs 2 bug
+      prisma.student.count({ where: { schoolId, has_voted: true } }), 
       prisma.contestant.count({ where: { schoolId } })
     ]);
 
@@ -23,7 +28,8 @@ export async function GET() {
       studentCount,
       voteCount,
       contestantCount,
-      email: (session.user as any).email
+      email: (session.user as any).email,
+      schoolName: schoolData?.name || "Institution Dashboard"
     }, { status: 200 });
 
   } catch (error) {
