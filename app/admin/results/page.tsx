@@ -91,10 +91,18 @@ export default function ElectionResultsPage() {
         <div className="flex flex-col gap-12 print:gap-8 relative z-10">
           {sortedGroups.map(([position, data]: any) => {
             const candidates = data.candidates;
-            const maxVotes = Math.max(...candidates.map((c: any) => c._count.votes), 1);
-            const winner = candidates[0];
-            const runnersUp = candidates.slice(1);
-            const hasVotes = winner && winner._count.votes > 0;
+            
+            // --- TIE IDENTIFICATION LOGIC ---
+            const maxVotes = candidates[0]?._count?.votes || 0;
+            const hasVotes = maxVotes > 0;
+            
+            // Find ALL candidates who share the maximum number of votes
+            const topCandidates = candidates.filter((c: any) => c._count.votes === maxVotes);
+            // The rest are runners up
+            const runnersUp = candidates.filter((c: any) => c._count.votes < maxVotes);
+            
+            // Determine if it is a tie
+            const isTie = topCandidates.length > 1 && hasVotes;
 
             return (
               // break-inside-avoid prevents a block from splitting across two A4 pages
@@ -106,54 +114,62 @@ export default function ElectionResultsPage() {
                 
                 <div className="bg-white/70 backdrop-blur-2xl p-6 sm:p-8 rounded-[2.5rem] border border-white shadow-xl shadow-slate-200/40 print:shadow-none print:bg-white print:border-2 print:border-slate-800 print:rounded-2xl flex flex-col xl:flex-row gap-8 items-stretch transition-all duration-300 hover:shadow-2xl hover:shadow-slate-200/60 hover:bg-white">
                   
-                  {/* WINNER CARD (Left Side) */}
+                  {/* WINNER(S) CARD (Left Side) */}
                   <div className="w-full xl:w-5/12 flex">
                     <div className={`w-full relative overflow-hidden p-8 rounded-4xl flex flex-col justify-between border-2 transition-all 
-                      ${hasVotes ? 'bg-linear-to-br from-amber-100 to-orange-50 border-amber-300 shadow-lg shadow-amber-500/10' : 'bg-slate-50 border-slate-200'} 
+                      ${hasVotes ? (isTie ? 'bg-linear-to-br from-orange-100 to-amber-50 border-orange-300 shadow-lg shadow-orange-500/10' : 'bg-linear-to-br from-amber-100 to-orange-50 border-amber-300 shadow-lg shadow-amber-500/10') : 'bg-slate-50 border-slate-200'} 
                       print:shadow-none print:bg-white print:border print:border-slate-300 print:rounded-2xl`}>
                       
-                      {/* Decorative background crown */}
-                      {hasVotes && <div className="absolute -top-10 -right-10 text-9xl opacity-[0.05] transform rotate-12 pointer-events-none print:hidden">👑</div>}
+                      {/* Decorative background icon */}
+                      {hasVotes && <div className="absolute -top-10 -right-10 text-9xl opacity-[0.05] transform rotate-12 pointer-events-none print:hidden">{isTie ? '⚔️' : '👑'}</div>}
                       
                       <div className="relative z-10 flex flex-col h-full">
                         <div className="flex justify-between items-start mb-6">
                           <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border 
-                            ${hasVotes ? 'bg-amber-500 text-white border-amber-400 shadow-sm' : 'bg-white text-slate-500 border-slate-200'}
+                            ${hasVotes ? (isTie ? 'bg-orange-500 text-white border-orange-400 shadow-sm' : 'bg-amber-500 text-white border-amber-400 shadow-sm') : 'bg-white text-slate-500 border-slate-200'}
                             print:bg-slate-100 print:text-slate-800 print:border-slate-300`}>
-                            {hasVotes ? "Current Leader" : "Awaiting Votes"}
+                            {hasVotes ? (isTie ? "Tied for Lead" : "Current Leader") : "Awaiting Votes"}
                           </div>
-                          {hasVotes && <div className="text-5xl drop-shadow-[0_0_20px_rgba(245,158,11,0.6)] print:drop-shadow-none print:text-3xl">🏆</div>}
+                          {hasVotes && <div className={`text-5xl print:drop-shadow-none print:text-3xl ${isTie ? 'drop-shadow-[0_0_20px_rgba(249,115,22,0.6)]' : 'drop-shadow-[0_0_20px_rgba(245,158,11,0.6)]'}`}>{isTie ? '⚔️' : '🏆'}</div>}
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 mb-8">
-                          <div className="relative">
-                            {winner.photo_url ? (
-                              <img src={winner.photo_url} alt="" className={`w-28 h-28 rounded-full object-cover border-4 print:border-slate-300 shadow-xl ${hasVotes ? 'border-amber-400' : 'border-white'}`} />
-                            ) : (
-                              <div className={`w-28 h-28 rounded-full flex items-center justify-center font-black text-5xl border-4 print:border-slate-300 print:bg-slate-100 print:text-slate-800 shadow-xl ${hasVotes ? 'bg-amber-50 text-amber-500 border-amber-300' : 'bg-white text-slate-300 border-slate-200'}`}>
-                                {winner.name.charAt(0)}
+                        {/* Loop through all top candidates (handles 1 winner or multiple tied winners) */}
+                        <div className="flex flex-col gap-6 mb-8">
+                          {topCandidates.map((winner: any, index: number) => (
+                            <div key={winner.id} className="relative">
+                              {index > 0 && <hr className="border-t border-dashed border-slate-300/50 mb-6 print:border-slate-300" />}
+                              <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+                                <div className="relative">
+                                  {winner.photo_url ? (
+                                    <img src={winner.photo_url} alt="" className={`w-24 h-24 rounded-full object-cover border-4 print:border-slate-300 shadow-xl ${hasVotes ? (isTie ? 'border-orange-400' : 'border-amber-400') : 'border-white'}`} />
+                                  ) : (
+                                    <div className={`w-24 h-24 rounded-full flex items-center justify-center font-black text-4xl border-4 print:border-slate-300 print:bg-slate-100 print:text-slate-800 shadow-xl ${hasVotes ? (isTie ? 'bg-orange-50 text-orange-500 border-orange-300' : 'bg-amber-50 text-amber-500 border-amber-300') : 'bg-white text-slate-300 border-slate-200'}`}>
+                                      {winner.name.charAt(0)}
+                                    </div>
+                                  )}
+                                  {hasVotes && !isTie && <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm border-2 border-white shadow-sm print:hidden">1</div>}
+                                </div>
+                                <div className="mt-2 sm:mt-0 flex flex-col justify-center">
+                                  <h3 className={`text-2xl sm:text-3xl font-black leading-tight wrap-break-word ${hasVotes ? 'text-slate-900' : 'text-slate-700'} print:text-black`}>
+                                    {winner.name}
+                                  </h3>
+                                  <p className={`font-black mt-2 text-sm uppercase tracking-wider ${hasVotes ? (isTie ? 'text-orange-600' : 'text-amber-600') : 'text-slate-400'} print:text-slate-600`}>
+                                    Grade {winner.grade} {winner.section && `• Sec ${winner.section}`}
+                                  </p>
+                                </div>
                               </div>
-                            )}
-                            {hasVotes && <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm border-2 border-white shadow-sm print:hidden">1</div>}
-                          </div>
-                          <div className="mt-2 sm:mt-0">
-                            <h3 className={`text-2xl sm:text-3xl font-black leading-tight wrap-break-word ${hasVotes ? 'text-slate-900' : 'text-slate-700'} print:text-black`}>
-                              {winner.name}
-                            </h3>
-                            <p className={`font-black mt-2 text-sm uppercase tracking-wider ${hasVotes ? 'text-amber-600' : 'text-slate-400'} print:text-slate-600`}>
-                              Grade {winner.grade} {winner.section && `• Sec ${winner.section}`}
-                            </p>
-                          </div>
+                            </div>
+                          ))}
                         </div>
                         
-                        <div className={`mt-auto pt-6 border-t flex justify-between items-end ${hasVotes ? 'border-amber-200' : 'border-slate-200'} print:border-slate-200`}>
+                        <div className={`mt-auto pt-6 border-t flex justify-between items-end ${hasVotes ? (isTie ? 'border-orange-200' : 'border-amber-200') : 'border-slate-200'} print:border-slate-200`}>
                           <div>
-                            <p className={`font-black uppercase tracking-widest text-[10px] mb-1 ${hasVotes ? 'text-amber-600' : 'text-slate-400'} print:text-slate-500`}>Total Votes</p>
-                            <p className={`text-6xl font-black leading-none ${hasVotes ? 'text-slate-900' : 'text-slate-800'} print:text-black`}>{winner._count.votes}</p>
+                            <p className={`font-black uppercase tracking-widest text-[10px] mb-1 ${hasVotes ? (isTie ? 'text-orange-600' : 'text-amber-600') : 'text-slate-400'} print:text-slate-500`}>Total Votes</p>
+                            <p className={`text-6xl font-black leading-none ${hasVotes ? 'text-slate-900' : 'text-slate-800'} print:text-black`}>{maxVotes}</p>
                           </div>
-                          {hasVotes && (
+                          {hasVotes && !isTie && (
                             <div className="text-right">
-                              <span className="text-3xl font-black text-amber-600 print:text-slate-800">{Math.round((winner._count.votes / maxVotes) * 100)}%</span>
+                              <span className="text-3xl font-black text-amber-600 print:text-slate-800">{Math.round((maxVotes / maxVotes) * 100)}%</span>
                               <span className={`block text-[10px] font-bold uppercase ${hasVotes ? 'text-amber-500' : 'text-slate-400'} print:text-slate-500`}>of total</span>
                             </div>
                           )}
@@ -167,7 +183,9 @@ export default function ElectionResultsPage() {
                     {runnersUp.length === 0 ? (
                       <div className="grow bg-slate-50/50 rounded-4xl border-2 border-slate-200 border-dashed flex flex-col items-center justify-center p-8 text-center print:border-slate-300 print:bg-transparent">
                         <span className="text-4xl mb-4 opacity-50 print:hidden">👻</span>
-                        <p className="text-slate-400 font-black text-sm uppercase tracking-widest print:text-slate-600">Running Unopposed</p>
+                        <p className="text-slate-400 font-black text-sm uppercase tracking-widest print:text-slate-600">
+                          {isTie ? "No other challengers" : "Running Unopposed"}
+                        </p>
                       </div>
                     ) : (
                       runnersUp.map((candidate: any, index: number) => {
@@ -176,7 +194,7 @@ export default function ElectionResultsPage() {
                           <div key={candidate.id} className="bg-white print:bg-transparent print:shadow-none print:border-b print:border-slate-200 print:rounded-none p-4 sm:p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 sm:gap-6 relative overflow-hidden group/card hover:border-blue-200 transition-colors">
                             
                             <div className="w-12 h-12 shrink-0 flex items-center justify-center rounded-2xl font-black text-lg bg-slate-50 text-slate-400 border border-slate-100 print:border-slate-300 print:bg-slate-50 print:text-slate-800">
-                              #{index + 2}
+                              #{index + 1 + topCandidates.length}
                             </div>
                             
                             <div className="w-14 h-14 shrink-0 relative z-10">
